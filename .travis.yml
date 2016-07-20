@@ -1,29 +1,61 @@
+sudo: required
+dist: trusty
 language: ruby
+
 before_install:
-- gem install asciidoctor tilt
+before_install:
+- gem install asciidoctor -v 1.5.2
+- gem install tilt
+- sudo pip install git+https://github.com/rdhyee/gitberg.git
+- sudo pip install pillow
+- sudo pip install cssutils
+- sudo pip install docutils
+- sudo pip install roman
+- sudo pip install git+git://github.com/rdhyee/pg-epubmaker.git
 script:
-- git clone https://github.com/sethwoodworth/asciidoctor-htmlbook.git
-- asciidoctor -a toc -b xhtml5 -d book -T ./asciidoctor-htmlbook/htmlbook-autogen/
-  -d book Frankenstein.asciidoc -o Frankenstein.html
-- git clone https://github.com/sethwoodworth/HTMLBook
-- xsltproc -stringparam external.assets.list " " ./HTMLBook/htmlbook-xsl/epub.xsl
-  Frankenstein.html
-- cp ./HTMLBook/stylesheets/epub/epub.css OEBPS
-- cp cover.png OEBPS/cover.png
-- zip -rX Frankenstein.epub mimetype
-- zip -rX Frankenstein.epub OEBPS/ META-INF/
+- VERSION=`ruby -e "require 'yaml'; meta = YAML.load_file('metadata.yaml'); puts meta['_version'];"`
+- git clone https://github.com/gitenberg-dev/asciidoctor-htmlbook.git
+- sudo pip install -r asciidoctor-htmlbook/gitberg-machine/requirements.txt
+
+- /usr/bin/python -c "from gitenberg import travis; travis.build_epub()"
+- ebook-convert book.epub book.mobi
+- xvfb-run ebook-convert book.epub book.pdf
 branches:
   only:
   - master
+notifications:
+  webhooks:
+    urls:
+      - https://unglue.it/api/travisci/webhook
+    on_success: always
+    on_failure: never
+    on_start: never
 deploy:
   skip_cleanup: true
   provider: releases
   api_key:
-    secure: Y8ezshJ11Klykn4kdiSIKL8n5Pyg/Vrp1BeGEBIvpiMuoeJHBC8KP06Q+6igo0JcYim//QqDsKN2C8quADD9uXTYkwdvlyb6PBopZYzaUskurZ8jBynUsdCSQLHkA/QuhQ7xefsKGKzdCnSNxZjZKV9Pfic3vvmf7J1UxpWCP7seCsR662NwJPa3zXNp7b+QOL/r2lROwa0cFJl33ONUwCKphq+4NCPPUNMGcDvAjD0Uk8WbPwUi9E28xVkp1uN+pJ3D50AyT3+hoHtJNE9yzHznmgP6DA4zSurTveOqxod0OFHEktiHE/9GnCjGjKh6YMaxB6RDraOwq3KIFekdBXiOhpH0TQO3h6UQ18eU+dyEONVSNX8lmFftqgrUPgP1WiDLSR/UqTr6Ovwsrkhyqc575rvVa1y+fUgVHXo3qZZf0LcloDgg4NP0IpaVV72hcOtBIUTFlKcNrsCRxL8iTjqzpLjMvfzAQuSPDnbCDw2EKLob2cRsn+sYH6WowMVEgNlRnv0PCzUigAKL4MGWdYWum7YYDxXblAI1wzicUFRbmS0u9saEQ54r2iXOHLIuuI++mOFuvkWUAeytNtGVtPGbFW1tCJi4J+lkYvUmIEA7/0Anor2GQ/ppZOyWgOSFojqc6sxqi7rPKykIg0TPWCPmOjlD9Bh8zdfVNjynEUg=
-  file: Frankenstein.epub
-  on:
+    secure: kXdBVn6vXgHGc5CEIqJ8Q2WN0vBmq0go2yEZ2cdAz+MfQsYwNuCPsJmP+iHSmwWdTQy8d+go1jjTl3S7mozokxUPh938LVVp4D90poOiNSA/MHWvXLDCWSEQQQz/submcXG4PYdCOQdeUPkBYA3OyN6nHbGCqA4G19Xe5Dg9RNQfmzaeMQc49ItKTgc7ubleCwNtAsyXmN1CaKseIghgyXIlGXCIZ0qz3YlaLNyTgMOwfPS1VD6sUOCY8ZX9U++3suRR3ans6cU7FErXwh5rC10swFWRgMiKH2zFbfSO1Uq+XLC7/hLNGdXxW1VwbgmlE6hzDE4u1Btw4A26JgO+YUHx/RCiYulRXrN5jzuLEsp4YfxVlHoVbbYdZFd/zNxxs3r/jq75LYwqEjP0Xl59xK3MkyfrKdOMDjPfBIZSD0p9gYXy4npb/+jIFxOhZi0SppwES3jnDBfl/bnDSwuA6Hcy1y2epfOrvtAuP1gczyLAFua+W8n7RcKkXwkCykwNFk7rVg8a1phZHTDLmop8MRqrHwwVRtUgIpeEPDZ8b9VSteXOTSHbEIX9aAxr2og7/KgO6+WAcgVyUOtbfvrTfneg4wVmP9QU6FAHX2QkKZ2i31p+8gY8DoQsB9F6NiJhUa0FsTYSC1Ma6E+EaTlcyWjWNR+75ELa8JXZVnzaO3o=
+  file:
+    - book.epub
+    - book.mobi
+    - book.pdf
+  "on":
     repo: rdhyee/Frankenstein_84
 addons:
   apt:
     packages:
     - xsltproc
+    - xvfb
+    - calibre
+    - python-pip
+    - git
+    - python-dev
+    - libjpeg-dev
+    - libpng-dev
+    - libfreetype6
+    - libfreetype6-dev
+    - zlib1g-dev
+    - python-lxml
+    - libxml2-dev
+    - libxslt1-dev
+    - tidy
